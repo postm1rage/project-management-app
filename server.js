@@ -1,6 +1,6 @@
 const express = require("express");
 const session = require("express-session");
-const { MongoClient } = require("mongodb");
+const { MongoClient, ObjectId } = require("mongodb");
 const bcrypt = require("bcryptjs");
 
 const app = express();
@@ -18,8 +18,13 @@ app.use(
   })
 );
 
+function requireAuth(req, res, next) {
+  if (!req.session.user) return res.redirect("/login");
+  next();
+}
+
 app.get("/", (req, res) => {
-  res.redirect("/login");
+  res.redirect("/projects");
 });
 
 app.get("/login", (req, res) => {
@@ -77,6 +82,40 @@ app.post("/register", async (req, res) => {
 app.get("/logout", (req, res) => {
   req.session.destroy();
   res.redirect("/login");
+});
+
+app.get("/projects", requireAuth, async (req, res) => {
+  try {
+    await client.connect();
+    const db = client.db("project_management");
+    const projects = await db.collection("projects").find().toArray();
+    res.render("projects", { projects, user: req.session.user });
+  } catch (e) {
+    res.send("Ошибка загрузки проектов");
+  }
+});
+
+app.post("/projects", requireAuth, async (req, res) => {
+  const { name, description, startDate, endDate, priority } = req.body;
+  try {
+    await client.connect();
+    const db = client.db("project_management");
+    const project = {
+      name,
+      description,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      priority,
+      status: "active",
+      createdBy: new ObjectId(req.session.user._id),
+      team: [{ userId: new ObjectId(req.session.user._id), role: "manager" }],
+      createdAt: new Date(),
+    };
+    await db.collection("projects").insertOne(project);
+    res.redirect("/projects");
+  } catch (e) {
+    res.send("Ошибка создания проекта");
+  }
 });
 
 app.listen(3000, () => {
