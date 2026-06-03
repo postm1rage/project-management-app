@@ -118,6 +118,96 @@ app.post("/projects", requireAuth, async (req, res) => {
   }
 });
 
+app.get("/projects/:id", requireAuth, async (req, res) => {
+  try {
+    await client.connect();
+    const db = client.db("project_management");
+    const project = await db.collection("projects").findOne({ _id: new ObjectId(req.params.id) });
+    const tasks = await db.collection("tasks").find({ projectId: new ObjectId(req.params.id) }).toArray();
+    const allUsers = await db.collection("users").find({}, { projection: { _id: 1, fullName: 1 } }).toArray();
+    res.render("project", { project, tasks, allUsers, user: req.session.user });
+  } catch (e) {
+    res.send("Ошибка загрузки проекта");
+  }
+});
+
+app.post("/projects/:id/tasks", requireAuth, async (req, res) => {
+  const { title, description, priority, assigneeId, dueDate } = req.body;
+  try {
+    await client.connect();
+    const db = client.db("project_management");
+    const task = {
+      projectId: new ObjectId(req.params.id),
+      title,
+      description,
+      status: "todo",
+      priority,
+      assigneeId: new ObjectId(assigneeId),
+      reporterId: new ObjectId(req.session.user._id),
+      dueDate: new Date(dueDate),
+      tags: [],
+      attachments: [],
+      comments: [],
+      history: [{ changedBy: new ObjectId(req.session.user._id), field: "created", oldValue: "", newValue: title, changedAt: new Date() }],
+      createdAt: new Date(),
+    };
+    await db.collection("tasks").insertOne(task);
+    res.redirect(`/projects/${req.params.id}`);
+  } catch (e) {
+    res.send("Ошибка создания задачи");
+  }
+});
+
+app.post("/tasks/:id/status", requireAuth, async (req, res) => {
+  const { status, projectId } = req.body;
+  try {
+    await client.connect();
+    const db = client.db("project_management");
+    const task = await db.collection("tasks").findOne({ _id: new ObjectId(req.params.id) });
+    await db.collection("tasks").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      {
+        $set: { status },
+        $push: {
+          history: {
+            changedBy: new ObjectId(req.session.user._id),
+            field: "status",
+            oldValue: task.status,
+            newValue: status,
+            changedAt: new Date(),
+          },
+        },
+      }
+    );
+    res.redirect(`/projects/${projectId}`);
+  } catch (e) {
+    res.send("Ошибка обновления статуса");
+  }
+});
+
+app.post("/tasks/:id/comment", requireAuth, async (req, res) => {
+  const { text, projectId } = req.body;
+  try {
+    await client.connect();
+    const db = client.db("project_management");
+    await db.collection("tasks").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      {
+        $push: {
+          comments: {
+            userId: new ObjectId(req.session.user._id),
+            text,
+            createdAt: new Date(),
+          },
+        },
+      }
+    );
+    res.redirect(`/projects/${projectId}`);
+  } catch (e) {
+    res.send("Ошибка добавления комментария");
+  }
+});
+
 app.listen(3000, () => {
   console.log("Сервер запущен на http://localhost:3000");
 });
