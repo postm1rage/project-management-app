@@ -118,6 +118,21 @@ app.post("/projects", requireAuth, async (req, res) => {
   }
 });
 
+app.post("/projects/:id/status", requireAuth, async (req, res) => {
+  const { status } = req.body;
+  try {
+    await client.connect();
+    const db = client.db("project_management");
+    await db.collection("projects").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { status } }
+    );
+    res.redirect("/projects");
+  } catch (e) {
+    res.send("Ошибка обновления статуса проекта");
+  }
+});
+
 app.get("/projects/:id", requireAuth, async (req, res) => {
   try {
     await client.connect();

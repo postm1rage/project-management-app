@@ -31,6 +31,13 @@
             <span class="badge bg-<%= p.priority === 'high' ? 'danger' : (p.priority === 'medium' ? 'warning' : 'success') %>"><%= p.priority %></span>
             <span class="badge bg-<%= p.status === 'active' ? 'primary' : (p.status === 'completed' ? 'success' : 'secondary') %>"><%= p.status %></span>
           </p>
+          <form method="post" action="/projects/<%= p._id %>/status" class="mt-2">
+            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="active" <%= p.status === 'active' ? 'selected' : '' %>>Активный</option>
+              <option value="on_hold" <%= p.status === 'on_hold' ? 'selected' : '' %>>На паузе</option>
+              <option value="completed" <%= p.status === 'completed' ? 'selected' : '' %>>Завершён</option>
+            </select>
+          </form>
         </div>
       </div>
     </div>
