@@ -20,7 +20,9 @@
 <div class="container mt-4">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Проекты</h3>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProjectModal">Создать проект</button>
+    <% if (user.role !== 'member') { %>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProjectModal">Создать проект</button>
+        <% } %>
   </div>
 
   <div class="row">
@@ -48,9 +50,11 @@
               <option value="high" <%= p.priority === 'high' ? 'selected' : '' %>>Высокий</option>
             </select>
           </form>
-          <form method="post" action="/projects/<%= p._id %>/delete" class="mt-1" onsubmit="return confirm('Удалить проект и все его задачи?')">
+          <% if (user.role !== 'member') { %>
+            <form method="post" action="/projects/<%= p._id %>/delete" class="mt-1" onsubmit="return confirm('Удалить проект и все его задачи?')">
             <button type="submit" class="btn btn-danger btn-sm w-100">Удалить</button>
-          </form>
+            </form>
+            <% } %>
         </div>
       </div>
     </div>
