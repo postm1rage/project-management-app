@@ -10,6 +10,9 @@
   <span class="navbar-brand">Project Manager</span>
   <div>
     <span class="text-white me-2"><%= user.fullName %> (<%= user.role %>)</span>
+    <% if (user.role === 'admin') { %>
+      <a href="/admin" class="btn btn-outline-warning btn-sm me-1">Админ</a>
+    <% } %>
     <a href="/logout" class="btn btn-outline-light btn-sm">Выход</a>
   </div>
 </nav>
