@@ -93,12 +93,7 @@ app.get("/projects", requireAuth, async (req, res) => {
   try {
     await client.connect();
     const db = client.db("project_management");
-    let projects;
-    if (req.session.user.role === "member") {
-      projects = await db.collection("projects").find({ "team.userId": new ObjectId(req.session.user._id) }).toArray();
-    } else {
-      projects = await db.collection("projects").find().toArray();
-    }
+    const projects = await db.collection("projects").find().toArray();
     res.render("projects", { projects, user: req.session.user });
   } catch (e) {
     res.send("Ошибка загрузки проектов");
@@ -181,8 +176,12 @@ app.get("/projects/:id", requireAuth, async (req, res) => {
     const project = await db.collection("projects").findOne({ _id: new ObjectId(req.params.id) });
     if (!project) return res.send("Проект не найден");
     if (req.session.user.role === "member") {
-      const isMember = project.team.some(t => t.userId.toString() === req.session.user._id);
-      if (!isMember) return res.send("Доступ запрещён");
+      const isInTeam = project.team.some(t => t.userId.toString() === req.session.user._id);
+      const hasTask = await db.collection("tasks").findOne({
+        projectId: new ObjectId(req.params.id),
+        assigneeId: new ObjectId(req.session.user._id)
+      });
+      if (!isInTeam && !hasTask) return res.send("Доступ запрещён");
     }
     const tasksRaw = await db.collection("tasks").find({ projectId: new ObjectId(req.params.id) }).toArray();
     const userIds = [...new Set(tasksRaw.flatMap(t => (t.comments || []).map(c => c.userId.toString())))];
