@@ -184,7 +184,20 @@ app.get("/projects/:id", requireAuth, async (req, res) => {
       const isMember = project.team.some(t => t.userId.toString() === req.session.user._id);
       if (!isMember) return res.send("Доступ запрещён");
     }
-    const tasks = await db.collection("tasks").find({ projectId: new ObjectId(req.params.id) }).toArray();
+    const tasksRaw = await db.collection("tasks").find({ projectId: new ObjectId(req.params.id) }).toArray();
+    const userIds = [...new Set(tasksRaw.flatMap(t => (t.comments || []).map(c => c.userId.toString())))];
+    const usersMap = {};
+    if (userIds.length) {
+      const usersArr = await db.collection("users")
+        .find({ _id: { $in: userIds.map(id => new ObjectId(id)) } })
+        .project({ fullName: 1 })
+        .toArray();
+      usersArr.forEach(u => usersMap[u._id.toString()] = u.fullName);
+    }
+    const tasks = tasksRaw.map(task => ({
+      ...task,
+      comments: (task.comments || []).map(c => ({ ...c, userFullName: usersMap[c.userId.toString()] || "Неизвестный" }))
+    }));
     const allUsers = await db.collection("users").find({}, { projection: { _id: 1, fullName: 1 } }).toArray();
     res.render("project", { project, tasks, allUsers, user: req.session.user });
   } catch (e) {

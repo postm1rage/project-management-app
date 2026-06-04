@@ -51,7 +51,7 @@
             <div class="mt-2">
               <small class="text-muted">Комментарии:</small>
               <% task.comments.forEach(c => { %>
-                <p class="small mb-0"><strong><%= c.userId %>:</strong> <%= c.text %></p>
+                <p class="small mb-0"><strong><%= c.userFullName %>:</strong> <%= c.text %></p>
               <% }) %>
             </div>
           <% } %>
