@@ -23,6 +23,11 @@ function requireAuth(req, res, next) {
   next();
 }
 
+function requireAdmin(req, res, next) {
+  if (!req.session.user || req.session.user.role !== "admin") return res.redirect("/projects");
+  next();
+}
+
 app.get("/", (req, res) => {
   res.redirect("/projects");
 });
@@ -133,6 +138,33 @@ app.post("/projects/:id/status", requireAuth, async (req, res) => {
   }
 });
 
+app.post("/projects/:id/priority", requireAuth, async (req, res) => {
+  const { priority } = req.body;
+  try {
+    await client.connect();
+    const db = client.db("project_management");
+    await db.collection("projects").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { priority } }
+    );
+    res.redirect("/projects");
+  } catch (e) {
+    res.send("Ошибка обновления приоритета проекта");
+  }
+});
+
+app.post("/projects/:id/delete", requireAuth, async (req, res) => {
+  try {
+    await client.connect();
+    const db = client.db("project_management");
+    await db.collection("tasks").deleteMany({ projectId: new ObjectId(req.params.id) });
+    await db.collection("projects").deleteOne({ _id: new ObjectId(req.params.id) });
+    res.redirect("/projects");
+  } catch (e) {
+    res.send("Ошибка удаления проекта");
+  }
+});
+
 app.get("/projects/:id", requireAuth, async (req, res) => {
   try {
     await client.connect();
@@ -200,33 +232,6 @@ app.post("/tasks/:id/status", requireAuth, async (req, res) => {
   }
 });
 
-app.post("/projects/:id/priority", requireAuth, async (req, res) => {
-  const { priority } = req.body;
-  try {
-    await client.connect();
-    const db = client.db("project_management");
-    await db.collection("projects").updateOne(
-      { _id: new ObjectId(req.params.id) },
-      { $set: { priority } }
-    );
-    res.redirect("/projects");
-  } catch (e) {
-    res.send("Ошибка обновления приоритета проекта");
-  }
-});
-
-app.post("/projects/:id/delete", requireAuth, async (req, res) => {
-  try {
-    await client.connect();
-    const db = client.db("project_management");
-    await db.collection("tasks").deleteMany({ projectId: new ObjectId(req.params.id) });
-    await db.collection("projects").deleteOne({ _id: new ObjectId(req.params.id) });
-    res.redirect("/projects");
-  } catch (e) {
-    res.send("Ошибка удаления проекта");
-  }
-});
-
 app.post("/tasks/:id/priority", requireAuth, async (req, res) => {
   const { priority, projectId } = req.body;
   try {
@@ -274,6 +279,32 @@ app.post("/tasks/:id/comment", requireAuth, async (req, res) => {
     res.redirect(`/projects/${projectId}`);
   } catch (e) {
     res.send("Ошибка добавления комментария");
+  }
+});
+
+app.get("/admin", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    await client.connect();
+    const db = client.db("project_management");
+    const users = await db.collection("users").find().toArray();
+    res.render("admin", { users, currentUser: req.session.user });
+  } catch (e) {
+    res.send("Ошибка загрузки админ-панели");
+  }
+});
+
+app.post("/admin/users/:id/toggle", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    await client.connect();
+    const db = client.db("project_management");
+    const user = await db.collection("users").findOne({ _id: new ObjectId(req.params.id) });
+    await db.collection("users").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { isBlocked: !user.isBlocked } }
+    );
+    res.redirect("/admin");
+  } catch (e) {
+    res.send("Ошибка");
   }
 });
 
