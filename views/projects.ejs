@@ -38,6 +38,16 @@
               <option value="completed" <%= p.status === 'completed' ? 'selected' : '' %>>Завершён</option>
             </select>
           </form>
+          <form method="post" action="/projects/<%= p._id %>/priority" class="mt-1">
+            <select name="priority" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="low" <%= p.priority === 'low' ? 'selected' : '' %>>Низкий</option>
+              <option value="medium" <%= p.priority === 'medium' ? 'selected' : '' %>>Средний</option>
+              <option value="high" <%= p.priority === 'high' ? 'selected' : '' %>>Высокий</option>
+            </select>
+          </form>
+          <form method="post" action="/projects/<%= p._id %>/delete" class="mt-1" onsubmit="return confirm('Удалить проект и все его задачи?')">
+            <button type="submit" class="btn btn-danger btn-sm w-100">Удалить</button>
+          </form>
         </div>
       </div>
     </div>

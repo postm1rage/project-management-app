@@ -64,6 +64,18 @@
               </select>
             </form>
           </div>
+          <form method="post" action="/tasks/<%= task._id %>/priority" class="mt-1">
+            <input type="hidden" name="projectId" value="<%= project._id %>">
+            <select name="priority" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="low" <%= task.priority === 'low' ? 'selected' : '' %>>Низкий</option>
+              <option value="medium" <%= task.priority === 'medium' ? 'selected' : '' %>>Средний</option>
+              <option value="high" <%= task.priority === 'high' ? 'selected' : '' %>>Высокий</option>
+            </select>
+          </form>
+          <form method="post" action="/tasks/<%= task._id %>/delete" class="mt-1" onsubmit="return confirm('Удалить задачу?')">
+            <input type="hidden" name="projectId" value="<%= project._id %>">
+            <button type="submit" class="btn btn-danger btn-sm w-100">Удалить</button>
+          </form>
         </div>
         <% }) %>
       </div>
