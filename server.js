@@ -200,6 +200,60 @@ app.post("/tasks/:id/status", requireAuth, async (req, res) => {
   }
 });
 
+app.post("/projects/:id/priority", requireAuth, async (req, res) => {
+  const { priority } = req.body;
+  try {
+    await client.connect();
+    const db = client.db("project_management");
+    await db.collection("projects").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { priority } }
+    );
+    res.redirect("/projects");
+  } catch (e) {
+    res.send("Ошибка обновления приоритета проекта");
+  }
+});
+
+app.post("/projects/:id/delete", requireAuth, async (req, res) => {
+  try {
+    await client.connect();
+    const db = client.db("project_management");
+    await db.collection("tasks").deleteMany({ projectId: new ObjectId(req.params.id) });
+    await db.collection("projects").deleteOne({ _id: new ObjectId(req.params.id) });
+    res.redirect("/projects");
+  } catch (e) {
+    res.send("Ошибка удаления проекта");
+  }
+});
+
+app.post("/tasks/:id/priority", requireAuth, async (req, res) => {
+  const { priority, projectId } = req.body;
+  try {
+    await client.connect();
+    const db = client.db("project_management");
+    await db.collection("tasks").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { priority } }
+    );
+    res.redirect(`/projects/${projectId}`);
+  } catch (e) {
+    res.send("Ошибка обновления приоритета задачи");
+  }
+});
+
+app.post("/tasks/:id/delete", requireAuth, async (req, res) => {
+  const { projectId } = req.body;
+  try {
+    await client.connect();
+    const db = client.db("project_management");
+    await db.collection("tasks").deleteOne({ _id: new ObjectId(req.params.id) });
+    res.redirect(`/projects/${projectId}`);
+  } catch (e) {
+    res.send("Ошибка удаления задачи");
+  }
+});
+
 app.post("/tasks/:id/comment", requireAuth, async (req, res) => {
   const { text, projectId } = req.body;
   try {
